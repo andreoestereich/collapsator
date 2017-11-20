@@ -100,11 +100,21 @@ def validateFile(path):
 
 class inFrame:
     def __init__(self, frame):
-        self.frame = frame
+        self.scrollCanvas = tk.Canvas(frame)
+        self.frame = tk.Frame(self.scrollCanvas)
+        self.scrollBar = tk.Scrollbar(frame, orient="vertical", command=self.scrollCanvas.yview)
+        self.scrollBar.grid(column=1,row=0,sticky='nsew')
+        self.scrollCanvas['yscrollcommand'] = self.scrollBar.set
+        self.scrollBar.grid_forget()
+
+        self.scrollCanvas.create_window((0,0),window=self.frame,anchor='nw')
+        self.frame.bind("<Configure>", self.AuxscrollFunction)
+        self.scrollCanvas.grid(column=0,row=0,sticky='nsew')
+
         addButton = ttk.Button(self.frame, text="Add file", command=self.addEntry)
-        addButton.grid(column=1, row=0)
-        remButton = ttk.Button(self.frame, text="Remove file", command=self.delEntry)
-        remButton.grid(column=2, row=0)
+        addButton.grid(column=1, row=100)
+        #remButton = ttk.Button(self.frame, text="Remove file", command=self.delEntry)
+        #remButton.grid(column=2, row=0)
         self.counter = 0
         self.addEntry()
 
@@ -112,29 +122,44 @@ class inFrame:
         def cText(*args):
             entry.delete(0,'end')
             entry.insert(0,askopenfilename())
+
+        def delEntry(*args):
+            if self.counter > 1:
+                entry.destroy()
+                entryN.destroy()
+                cBut.destroy()
+                nEq.destroy()
+                delBut.destroy()
+                self.counter -= 1
         
-        self.counter+=1
-        text = tk.StringVar()
-        entry = ttk.Entry(self.frame, textvariable=text, width=50, validate = 'focusout', validatecommand = (self.frame.register(validateFile), '%s'))
-        entry.grid(column=1, row=self.counter, columnspan=2)
-        cBut = ttk.Button(self.frame, text="Open", command=cText)
-        cBut.grid(column=0, row=self.counter)
-        nEq = ttk.Label(self.frame, text=" N = ")
-        nEq.grid(column=3, row=self.counter)
+        #this is important as to not violate the add button
+        if self.counter < 99:
+            self.counter+=1
 
-        vcmd = (self.frame.register(validateInt), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+            #to resize the scrollbar
+            self.scrollBar.grid_forget()
 
-        textN = tk.IntVar()
-        textN.set(0)
-        #textN.trace("w",callback=mustBeInt)
-        entryN = ttk.Entry(self.frame, textvariable=textN, width=5, validate = 'key', validatecommand = vcmd)
-        entryN.grid(column=4, row=self.counter)
+            text = tk.StringVar()
+            entry = ttk.Entry(self.frame, textvariable=text, width=30, validate = 'focusout', validatecommand = (self.frame.register(validateFile), '%s'))
+            entry.grid(column=1, row=self.counter, columnspan=2)
+            cBut = ttk.Button(self.frame, text="Open", command=cText)
+            cBut.grid(column=0, row=self.counter, padx=(2,8))
+            nEq = ttk.Label(self.frame, text=" N = ")
+            nEq.grid(column=3, row=self.counter)
 
-    def delEntry(self):
-        if self.counter > 1:
-            self.counter -=1
-            for child in self.frame.winfo_children()[-4:]:
-                child.destroy()
+            vcmd = (self.frame.register(validateInt), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
+
+            textN = tk.IntVar()
+            textN.set(0)
+            #textN.trace("w",callback=mustBeInt)
+            entryN = ttk.Entry(self.frame, textvariable=textN, width=5, validate = 'key', validatecommand = vcmd)
+            entryN.grid(column=4, row=self.counter)
+
+            delBut = ttk.Button(self.frame, text="del", command=delEntry)
+            delBut.grid(column=5, row=self.counter, padx=(8,2))
+
+            self.scrollBar.grid(column=1,row=0,sticky='nsew')
+
 
     def fileLocations(self):
         entries = []
@@ -154,6 +179,11 @@ class inFrame:
         for child in self.frame.winfo_children():
             if isinstance(child, ttk.Entry) or isinstance(child, ttk.Button):
                 child.configure(state='disabled')
+    
+    def AuxscrollFunction(self,event):
+        #You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
+        self.scrollCanvas.configure(scrollregion=self.scrollCanvas.bbox("all"),width=500,height=100)
+
 
 class guessFrame:
     def __init__(self, frame):
@@ -256,7 +286,7 @@ class mainWin:
         #adding things to the interface
         self.content.pack()
         filesFrame.grid(column=0, row=0, columnspan=3, padx=8, pady=8)
-        self.plotFrame.grid(column=0, row=1, rowspan=4, padx=8, pady=8)
+        self.plotFrame.grid(column=0, row=1, rowspan=4, padx=8, pady=4, sticky='nesw')
 
         self.loadedFlag = False
         self.loadButt = tk.Button(self.content, text="Load data", command=self.loadData)

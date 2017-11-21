@@ -140,7 +140,7 @@ class inFrame:
             self.scrollBar.grid_forget()
 
             text = tk.StringVar()
-            entry = ttk.Entry(self.frame, textvariable=text, width=30, validate = 'focusout', validatecommand = (self.frame.register(validateFile), '%s'))
+            entry = ttk.Entry(self.frame, textvariable=text, width=40, validate = 'focusout', validatecommand = (self.frame.register(validateFile), '%s'))
             entry.grid(column=1, row=self.counter, columnspan=2)
             cBut = ttk.Button(self.frame, text="Open", command=cText)
             cBut.grid(column=0, row=self.counter, padx=(2,8))
@@ -182,7 +182,7 @@ class inFrame:
     
     def AuxscrollFunction(self,event):
         #You need to set a max size for frameTwo. Otherwise, it will grow as needed, and scrollbar do not act
-        self.scrollCanvas.configure(scrollregion=self.scrollCanvas.bbox("all"),width=500,height=100)
+        self.scrollCanvas.configure(scrollregion=self.scrollCanvas.bbox("all"),width=600,height=110)
 
 
 class guessFrame:
@@ -281,7 +281,7 @@ class mainWin:
         self.interacEntry = tk.Entry(self.content, textvariable=self.Ninterac, validate = 'key', validatecommand = (self.content.register(validateInt), '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W'), width=8, state='disabled')
         self.approxButt = tk.Button(self.content, text="Approximate", command=self.approximate, state='disabled')
         
-        self.statusLabel = tk.Label(self.content, text='')
+        self.exportButt = tk.Button(self.content, text='Export', command=self.exportDat, state='disabled')
 
         #adding things to the interface
         self.content.pack()
@@ -300,7 +300,7 @@ class mainWin:
         tk.Label(self.content, text=" interactions").grid(column=2, row=3, sticky=(tk.W, tk.S))
         self.approxButt.grid(column=1, columnspan=2, row=4, sticky=(tk.N), pady=4)
         self.distLabel.grid(column=0, row=5, padx=4, pady=4)
-        self.statusLabel.grid(column=1, columnspan=2, row=5, padx=4, pady=4)
+        self.exportButt.grid(column=1, columnspan=2, row=5, padx=4, pady=4)
 
         self.root.mainloop()
 
@@ -323,7 +323,11 @@ class mainWin:
                 res = loadFile(fileList[i])
 
                 if isinstance(res, np.ndarray):
-                    size= int(preSizes[i].replace('','0'))
+                    if preSizes[i] == '':
+                        size = 0
+                    else:
+                        size= int(preSizes[i])
+
                     if size== 0:
                         if not messagebox.askyesno("Error", "0 is not a valid system size. Do you want to continue without this file?"):
                             del dataSet[:]
@@ -356,6 +360,7 @@ class mainWin:
                 self.replotButt.configure(state='normal')
                 self.interacEntry.configure(state='normal')
                 self.approxButt.configure(state='normal')
+                self.exportButt.configure(state='normal')
 
                 self.plotData = dataSet
                 self.sysSizes = sizes
@@ -372,6 +377,7 @@ class mainWin:
             self.replotButt.configure(state='disabled')
             self.interacEntry.configure(state='disabled')
             self.approxButt.configure(state='disabled')
+            self.exportButt.configure(state='disabled')
 
     def graphPlot(self):
 
@@ -398,7 +404,7 @@ class mainWin:
     def graphReplot(self):
         #update info labels
         self.updateDist()
-        self.statusLabel.configure(text='')
+        #self.statusLabel.configure(text='')
 
         reescaled = reescale(self.resVal.returnVals(),self.sysSizes, self.plotData)
         xmin = reescaled[0][0].min()
@@ -424,6 +430,25 @@ class mainWin:
 
         self.canvas.draw()
 
+    def exportDat(self):
+        fileName = tk.filedialog.asksaveasfilename(filetypes=[('data','.dat'),('text','.txt')])
+        if fileName is None:
+            return
+
+        reescaled = reescale(self.resVal.returnVals(),self.sysSizes, self.plotData)
+
+        with open(fileName, 'w') as output:
+            output.write("#\t")
+            for size in self.sysSizes:
+                output.write("%i\t        \t"%(size))
+            output.write("\n")
+
+            for i in range(len(reescaled[0][0])):
+                for j in range(len(reescaled)):
+                    for k in range(2):
+                        output.write("%lf\t"%(reescaled[j][k][i]))
+                output.write("\n")
+
     def updateDist(self):
         dist = distCurves(self.resVal.returnVals(),self.sysSizes, self.plotData, self.resVal.xminVar.get(), self.resVal.xmaxVar.get())
         self.distLabel.configure(text="S = %g"%(dist))
@@ -438,7 +463,7 @@ class mainWin:
         self.resVal.setDefault(res['x'],xmin,xmax)
         #self.distLabel.configure(text="S = %g"%(res['fun']))
         self.graphReplot()
-        self.statusLabel.configure(text=res['message'])
+        #self.statusLabel.configure(text=res['message'])
 
 mainWin()
 

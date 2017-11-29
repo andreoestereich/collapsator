@@ -437,17 +437,30 @@ class mainWin:
 
         reescaled = reescale(self.resVal.returnVals(),self.sysSizes, self.plotData)
 
-        with open(fileName, 'w') as output:
-            output.write("#\t")
-            for size in self.sysSizes:
-                output.write("%i\t        \t"%(size))
-            output.write("\n")
+        comment = "#"
+        for size in self.sysSizes:
+            comment += "%08d\t        \t"%(size)
+        comment += "\n"
 
-            for i in range(len(reescaled[0][0])):
-                for j in range(len(reescaled)):
-                    for k in range(2):
-                        output.write("%lf\t"%(reescaled[j][k][i]))
-                output.write("\n")
+        bigest = 0
+        for element in reescaled:
+            if bigest < len(element[0]):
+                bigest = len(element[0])
+
+        with open(fileName, 'w') as saida:
+            saida.write(comment)
+            for i in range(bigest):
+                for array in reescaled:
+                    if i < len(array[0]):
+                        saida.write("%lf\t%lf\t"%(array[0][i],array[1][i]))
+                    else:
+                        saida.write("        \t        \t")
+                saida.write("\n")
+        #for i in range(len(reescaled[0][0])):
+        #    for j in range(len(reescaled)):
+        #        for k in range(2):
+        #            output.write("%lf\t"%(reescaled[j][k][i]))
+        #    output.write("\n")
 
     def updateDist(self):
         dist = distCurves(self.resVal.returnVals(),self.sysSizes, self.plotData, self.resVal.xminVar.get(), self.resVal.xmaxVar.get())
